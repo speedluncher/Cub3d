@@ -1,101 +1,122 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   game_loop.c                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: zsid-ele <zsid-ele@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/11/29 09:32:35 by zsid-ele          #+#    #+#             */
+/*   Updated: 2025/11/29 09:32:35 by zsid-ele         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../include/cub3d.h"
 
-int game_loop(void *param)
+int	check_inside_circle(t_cub3d *cub3d, t_circle_check *cc)
 {
-    t_cub3d *cub3d = (t_cub3d *)param;
-    render_scene(cub3d);
-    return (0);
-}
-// In main:
-
-
-int    check_area(int   test_x,int  test_y,t_cub3d * cub3d)
-{
-   int cx = test_x; // the mideel of the square not on the edges
-   int cy = test_y;
-    int  curr_x = cub3d->player.position[0];
-   int  curr_y = cub3d->player.position[1];
-   int x = cx - RADIUS;
-   while (x <= cx + RADIUS)
-   {
-       int y = cy - RADIUS;
-       while (y <= cy + RADIUS)
-       {
-            curr_y = y/(SQUARE_SIZE);
-            curr_x = x/(SQUARE_SIZE);
-           int dx = x - cx;  // distance from center in x
-           int dy = y - cy;  // distance from center in y
-   
-           if (squr(dx) + squr(dy) <= squr(RADIUS) && cub3d->map[curr_y][curr_x] == '1')
-           {
-               return(1);
-           }
-           y++;
-       }
-       x++;
-   }
-   return (0);
+	if (squr(cc->dx) + squr(cc->dy) <= squr(RADIUS))
+	{
+		cc->curr_x = cc->x / SQUARE_SIZE;
+		cc->curr_y = cc->y / SQUARE_SIZE;
+		if (cc->curr_x < 0 || cc->curr_y < 0 || !cub3d->map[cc->curr_y]
+			|| !cub3d->map[cc->curr_y][cc->curr_x]
+			|| cub3d->map[cc->curr_y][cc->curr_x] == '1')
+			return (1);
+	}
+	return (0);
 }
 
-
-int keys_pressed(int keycode, void *param)
+int	check_area(int test_x, int test_y, t_cub3d *cub3d)
 {
-    t_cub3d *cub3d = (t_cub3d *)param;
-    int test_x;
-    int test_y;
+	t_circle_check	cc;
 
-    if (keycode == 65307 ) // ESC on Linux (X11)
-    {
-        mlx_destroy_window(cub3d->mlx.mlx, cub3d->mlx.win);
-    
-        ahasna(cub3d);
-        exit(0);
-    }
-    if (keycode == 65363) // Left arrow
-    {
-        // return_current_area(cub3d);
-        printf("left\n");
+	cc.x = test_x - RADIUS;
+	while (cc.x <= test_x + RADIUS)
+	{
+		cc.y = test_y - RADIUS;
+		while (cc.y <= test_y + RADIUS)
+		{
+			cc.dx = cc.x - test_x;
+			cc.dy = cc.y - test_y;
+			if (check_inside_circle(cub3d, &cc))
+				return (1);
+			cc.y++;
+		}
+		cc.x++;
+	}
+	return (0);
+}
 
-        cub3d->player.angle += cub3d->player.rotation_speed;
-        // draw_player_2d(cub3d, 1);
-    }
-    if (keycode ==65361 ) // Right arrow
-    {
-        //  return_current_area(cub3d);
-        printf("right\n");
-        cub3d->player.angle -= cub3d->player.rotation_speed;
-        // draw_player_2d(cub3d, 1);
-    }
-    if (keycode ==65362 )
-    {
-        // return_current_area(cub3d);
-        test_x =cub3d->player.position[0] + cub3d->player.movespeed *cosf(cub3d->player.angle);
-        test_y = cub3d->player.position[1] - cub3d->player.movespeed * sinf(cub3d->player.angle);
-        if (check_area(test_x, test_y, cub3d) == 0)
-        {
-            cub3d->player.position[0] = test_x;
-            cub3d->player.position[1] = test_y;
-        }
-        // draw_player_2d(cub3d, 1);
-        printf("forward\n");
+int	move_vertical(t_cub3d *cub3d, int *test_x, int *test_y, int keycode)
+{
+	(void)test_x;
+	(void)test_y;
+	cub3d->new_x = cub3d->player.position[0];
+	cub3d->new_y = cub3d->player.position[1];
+	if (keycode == 0)
+	{
+		cub3d->new_x -= cub3d->player.movespeed * cub3d->player.dir[1];
+		cub3d->new_y += cub3d->player.movespeed * cub3d->player.dir[0];
+	}
+	if (keycode == 2)
+	{
+		cub3d->new_x += cub3d->player.movespeed * cub3d->player.dir[1];
+		cub3d->new_y -= cub3d->player.movespeed * cub3d->player.dir[0];
+	}
+	if (keycode == 0 || keycode == 2)
+	{
+		if (check_area((int)cub3d->new_x, (int)cub3d->new_y, cub3d) == 0)
+		{
+			cub3d->player.position[0] = cub3d->new_x;
+			cub3d->player.position[1] = cub3d->new_y;
+		}
+	}
+	return (0);
+}
 
-    }
-    if (keycode ==65364)
-    {
-        // return_current_area(cub3d);
-        test_x =cub3d->player.position[0] - cub3d->player.movespeed *cosf(cub3d->player.angle);
-        test_y = cub3d->player.position[1] + cub3d->player.movespeed * sinf(cub3d->player.angle);
-        if (check_area(test_x, test_y, cub3d) == 0)
-        {
-            cub3d->player.position[0] = test_x;
-            cub3d->player.position[1] = test_y;
-        }
-        // draw_player_2d(cub3d, 1);
-        printf("backword\n");
-    }
-    if (cub3d->player.angle < 0)
-        cub3d->player.angle += 2 * M_PI;
-    if (cub3d->player.angle > 2 * M_PI)
-        cub3d->player.angle -= 2 * M_PI;
-    return (0);
+int	move_horizontal(t_cub3d *cub3d, int *test_x, int *test_y, int keycode)
+{
+	(void)test_x;
+	(void)test_y;
+	cub3d->new_x = cub3d->player.position[0];
+	cub3d->new_y = cub3d->player.position[1];
+	if (keycode == 13)
+	{
+		cub3d->new_x += cub3d->player.movespeed * cub3d->player.dir[0];
+		cub3d->new_y += cub3d->player.movespeed * cub3d->player.dir[1];
+	}
+	if (keycode == 1)
+	{
+		cub3d->new_x -= cub3d->player.movespeed * cub3d->player.dir[0];
+		cub3d->new_y -= cub3d->player.movespeed * cub3d->player.dir[1];
+	}
+	if (keycode == 13 || keycode == 1)
+	{
+		if (check_area((int)cub3d->new_x, (int)cub3d->new_y, cub3d) == 0)
+		{
+			cub3d->player.position[0] = cub3d->new_x;
+			cub3d->player.position[1] = cub3d->new_y;
+		}
+	}
+	return (0);
+}
+
+int	keys_pressed(int keycode, void *param)
+{
+	t_cub3d	*cub3d;
+	int		test_x;
+	int		test_y;
+
+	cub3d = (t_cub3d *)param;
+	if (keycode == 53)
+		execution_exit(cub3d);
+	if (keycode == 124)
+		cub3d->player.angle += cub3d->player.rotation_speed;
+	if (keycode == 123)
+		cub3d->player.angle -= cub3d->player.rotation_speed;
+	cub3d->player.dir[0] = cos(cub3d->player.angle);
+	cub3d->player.dir[1] = -sin(cub3d->player.angle);
+	move_vertical(cub3d, &test_x, &test_y, keycode);
+	move_horizontal(cub3d, &test_x, &test_y, keycode);
+	return (0);
 }
